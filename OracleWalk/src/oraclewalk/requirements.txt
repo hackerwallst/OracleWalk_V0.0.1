@@ -1,0 +1,2 @@
+# Backward compatibility shim. Use project-root requirements.txt instead.
+-r ../../requirements.txt

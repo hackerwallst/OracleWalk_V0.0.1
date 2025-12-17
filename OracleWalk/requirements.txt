@@ -1,0 +1,7 @@
+python-binance
+python-telegram-bot==13.15
+pandas
+numpy
+Flask
+openai
+python-dotenv

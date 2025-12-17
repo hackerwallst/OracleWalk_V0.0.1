@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>OracleView</title>
+
+    <!-- Lightweight Charts v4 (compatível com oracleview.js v10) -->
+    <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+
+    <style>
+        :root {
+            --bg-main: #0c1116;
+            --bg-panel: #11161d;
+            --bg-panel-soft: #151b23;
+            --accent: #f5a623;
+            --accent-soft: #7b5dfa;
+            --grid: #1c2430;
+            --text: #d8e1ef;
+            --text-soft: #8c9bb5;
+            --up: #22c55e;
+            --down: #ef4444;
+            --outline-soft: #374151;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #020617;
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+        }
+
+        body {
+            display: flex;
+        }
+
+        #app {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* TOP BAR */
+        #top-bar {
+            height: 40px;
+            background: linear-gradient(90deg, #151b23, #141925);
+            border-bottom: 1px solid #1f2933;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 12px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+            z-index: 20;
+        }
+
+        #brand {
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        #brand::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            background: radial-gradient(circle, #10b981 0, #166534 60%, transparent 100%);
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.7);
+        }
+
+        #pair-info {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 6px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        #pair-symbol {
+            font-weight: 600;
+        }
+
+        #pair-timeframe {
+            font-size: 11px;
+            color: var(--text-soft);
+        }
+
+        #live-pill {
+            margin-left: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 2px 8px 2px 4px;
+            border-radius: 999px;
+            background: rgba(148, 27, 55, 0.16);
+            border: 1px solid rgba(248, 113, 113, 0.5);
+            color: #fecaca;
+            font-size: 11px;
+        }
+
+        #live-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            background: radial-gradient(circle, #f97373 0, #7f1d1d 60%, transparent 100%);
+            box-shadow: 0 0 12px rgba(248, 113, 113, 0.8);
+        }
+
+        /* MAIN */
+        #main {
+            flex: 1;
+            display: flex;
+            position: relative;
+            background: radial-gradient(circle at top, #111827 0, #05070a 55%);
+        }
+
+        /* LEFT TOOLBAR */
+        #left-toolbar {
+            width: 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding-top: 10px;
+            align-items: center;
+            z-index: 20;
+            background: transparent;
+            /* border-right: 1px solid #1f2933; opcional */
+        }
+
+        .tool-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            background: rgba(21, 27, 35, 0.96);
+            border: 1px solid #252f3f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-soft);
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.12s ease-out;
+            user-select: none;
+        }
+
+        .tool-btn:hover {
+            border-color: #4b5563;
+            background: #111827;
+            color: var(--text);
+        }
+
+        .tool-btn.active {
+            border-color: #a855f7;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.24) 0, rgba(15, 23, 42, 0.96) 60%);
+            color: #e9d5ff;
+            box-shadow: 0 0 0 1px rgba(88, 28, 135, 0.7), 0 0 14px rgba(168, 85, 247, 0.5);
+        }
+
+        /* CHARTS WRAPPER */
+        #charts-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin: 4px;
+            overflow: hidden;
+        }
+
+        /* Stack para charts + painel de posições */
+        #content-stack {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            position: relative;
+            margin: 4px;
+        }
+
+        /* 3 panes: preço, volume, RSI */
+        #pane-price {
+            flex: 4;
+            background: radial-gradient(circle at top, #020617 0, #020617 45%, #010409 100%);
+            border-radius: 10px;
+            border: 1px solid rgba(31, 41, 55, 0.9);
+            box-shadow:
+                0 18px 40px rgba(0, 0, 0, 0.9),
+                0 0 0 1px rgba(15, 23, 42, 0.9),
+                0 0 120px rgba(124, 58, 237, 0.3);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Painel de posições estilo trade planner (inferior) */
+        #positions-panel {
+            position: relative;
+            width: 100%;
+            background: rgba(10, 14, 22, 0.95);
+            border: 1px solid rgba(55, 65, 81, 0.7);
+            border-radius: 10px;
+            box-shadow: 0 16px 30px rgba(0, 0, 0, 0.45);
+            overflow: hidden;
+            z-index: 22;
+            backdrop-filter: blur(4px);
+            min-height: 140px;
+            height: 190px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #positions-panel .header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(55, 65, 81, 0.6);
+            background: rgba(17, 24, 39, 0.95);
+            color: #cbd5e1;
+            font-weight: 600;
+        }
+
+        #pos-tabs {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+        }
+
+        .pos-tab {
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(59, 130, 246, 0.35);
+            background: rgba(59, 130, 246, 0.08);
+            color: #bfdbfe;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.1s ease-out;
+        }
+
+        .pos-tab.active {
+            background: rgba(59, 130, 246, 0.2);
+            box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.5);
+            color: #e0f2fe;
+        }
+
+        #positions-panel table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        #positions-panel thead {
+            background: linear-gradient(90deg, rgba(30, 41, 59, 0.9), rgba(17, 24, 39, 0.9));
+            color: #e5e7eb;
+        }
+
+        #positions-panel th,
+        #positions-panel td {
+            padding: 8px 10px;
+            text-align: left;
+            border-bottom: 1px solid rgba(55, 65, 81, 0.4);
+            white-space: nowrap;
+        }
+
+        #positions-panel tbody tr:hover {
+            background: rgba(59, 130, 246, 0.08);
+        }
+
+        .pos-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: 11px;
+            color: #0b1020;
+            font-weight: 700;
+        }
+
+        .pos-long {
+            background: #bbf7d0;
+        }
+
+        .pos-short {
+            background: #fecdd3;
+        }
+
+        .pn-up {
+            color: #22c55e;
+        }
+
+        .pn-down {
+            color: #ef4444;
+        }
+
+        .pn-flat {
+            color: #e5e7eb;
+        }
+
+        #positions-panel .sub {
+            color: #94a3b8;
+            font-size: 11px;
+        }
+
+        /* Área rolável da tabela */
+        #positions-table-wrap {
+            overflow: auto;
+            flex: 1;
+        }
+
+        /* Área de equity (aba) */
+        #equity-area {
+            display: none;
+            padding: 10px 12px;
+            color: #e5e7eb;
+            font-size: 13px;
+        }
+
+        #equity-area .eq-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 6px 0;
+            color: #cbd5e1;
+        }
+
+        #equity-area .eq-label {
+            color: #94a3b8;
+        }
+
+        .eq-value {
+            color: #e5e7eb;
+        }
+
+        #equity-area .eq-value.up {
+            color: #22c55e;
+        }
+
+        #equity-area .eq-value.down {
+            color: #ef4444;
+        }
+
+        #pos-resizer {
+            height: 8px;
+            cursor: row-resize;
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.25), rgba(17, 24, 39, 0.8), rgba(59, 130, 246, 0.25));
+        }
+
+        #pane-volume {
+            flex: 1;
+            background: radial-gradient(circle at top, #020617 0, #020617 45%, #020617 100%);
+            border-radius: 10px;
+            border: 1px solid rgba(31, 41, 55, 0.9);
+            box-shadow:
+                0 12px 30px rgba(0, 0, 0, 0.9),
+                0 0 0 1px rgba(15, 23, 42, 0.9);
+            overflow: hidden;
+        }
+
+        #pane-rsi {
+            flex: 1;
+            background: radial-gradient(circle at top, #020617 0, #020617 45%, #020617 100%);
+            border-radius: 10px;
+            border: 1px solid rgba(31, 41, 55, 0.9);
+            box-shadow:
+                0 12px 30px rgba(0, 0, 0, 0.9),
+                0 0 0 1px rgba(15, 23, 42, 0.9);
+            overflow: hidden;
+        }
+
+        /* BOTTOM BAR */
+        #bottom-bar {
+            height: 28px;
+            background: #050815;
+            border-top: 1px solid #111827;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 0 10px;
+            gap: 8px;
+            font-size: 11px;
+            color: var(--text-soft);
+        }
+
+        .zoom-btn {
+            width: 22px;
+            height: 20px;
+            border-radius: 4px;
+            border: 1px solid #374151;
+            background: #020617;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #e5e7eb;
+            transition: all 0.1s ease-out;
+        }
+
+        .zoom-btn:hover {
+            background: #111827;
+        }
+
+        #dbg-msg {
+            margin-left: auto;
+            font-family: monospace;
+            font-size: 10px;
+            color: #9ca3af;
+        }
+
+        /* ===========================================================
+       ORDERBOOK DARK ULTRA — PAINEL LATERAL INSTITUCIONAL PRO
+       =========================================================== */
+        #orderbook-wrapper {
+            width: 320px;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(180deg, #1a1f2b 0%, #11161f 100%);
+            border-left: 1px solid #1c2530;
+            /* border-radius: 12px; removido para encaixar */
+            overflow: hidden;
+            /* box-shadow: -6px 0px 24px rgba(0,0,0,0.55); opcional */
+        }
+
+        /* HEADER */
+        #ob-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 13px;
+        }
+
+        .ob-title {
+            color: #e2e6f3;
+            font-weight: 600;
+        }
+
+        #ob-agg-select {
+            display: flex;
+            gap: 4px;
+        }
+
+        .agg-btn {
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: 11px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: #9aa3b5;
+            cursor: pointer;
+            transition: 0.15s ease;
+        }
+
+        .agg-btn.active {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.20);
+            color: #fff;
+        }
+
+        /* COLUMN HEADERS */
+        .ob-columns {
+            padding: 6px 12px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            font-size: 11px;
+            color: #8d96a6;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* LISTS */
+        .ob-side {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* ROW STYLE */
+        .ob-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 12px;
+            position: relative;
+            font-size: 13px;
+            transition: all 0.2s ease;
+            z-index: 1;
+        }
+
+        .ob-row:hover {
+            transform: scale(1.02);
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
+        }
+
+        .price {
+            flex: 1;
+            text-align: left;
+        }
+
+        .amount {
+            flex: 1;
+            text-align: center;
+        }
+
+        .total {
+            flex: 1;
+            text-align: right;
+        }
+
+        /* COLORS */
+        .red {
+            color: #f6465d;
+        }
+
+        .green {
+            color: #0ecb81;
+        }
+
+        /* DEPTH BARS */
+        .depth {
+            position: absolute;
+            height: 100%;
+            top: 0;
+            z-index: 0;
+            transition: width 0.25s ease;
+        }
+
+        .asks .depth {
+            right: 0;
+            background: linear-gradient(to left, rgba(246, 70, 93, 0.18), rgba(246, 70, 93, 0));
+        }
+
+        .bids .depth {
+            left: 0;
+            background: linear-gradient(to right, rgba(14, 203, 129, 0.18), rgba(14, 203, 129, 0));
+        }
+
+        /* MIDPRICE */
+        #ob-midprice {
+            text-align: center;
+            padding: 8px 0;
+            font-size: 15px;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.02);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: #fff;
+            letter-spacing: 0.3px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <!-- TOP BAR -->
+        <div id="top-bar">
+            <div id="brand">OracleView v10</div>
+
+            <div id="pair-info">
+                <span id="pair-symbol">BTCUSDT</span>
+                <span id="pair-timeframe">1m</span>
+            </div>
+
+            <div id="live-pill">
+                <div id="live-dot"></div>
+                LIVE
+            </div>
+        </div>
+
+        <!-- MAIN -->
+        <div id="main" style="flex: 1; display: flex; position: relative; overflow: hidden;">
+
+            <!-- LEFT TOOLBAR -->
+            <div id="left-toolbar"
+                style="width: 40px; display: flex; flex-direction: column; gap: 6px; padding-top: 10px; align-items: center; z-index: 20; background: transparent;">
+                <!-- Apenas visual, cursor normal -->
+                <div class="tool-btn active" title="Cursor normal">↖</div>
+
+                <!-- Trendline: chama função global do oracleview.js -->
+                <div class="tool-btn" title="Linha de tendência" onclick="enableTrendline()">／</div>
+
+                <!-- Undo último desenho -->
+                <div class="tool-btn" title="Desfazer último desenho" onclick="undoShape()">🧹</div>
+            </div>
+
+            <!-- Área principal: charts + painel de posições -->
+            <div id="content-stack">
+                <div id="charts-wrapper">
+                    <div id="pane-price"></div>
+                    <div id="pane-volume"></div>
+                    <div id="pane-rsi"></div>
+                </div>
+
+                <div id="pos-resizer"></div>
+
+                <!-- Painel de Posições -->
+                    <div id="positions-panel">
+                        <div class="header">
+                            Painel de Posições
+                            <div id="pos-tabs">
+                                <div class="pos-tab active" data-tab="open">Abertas</div>
+                                <div class="pos-tab" data-tab="history">Histórico</div>
+                                <div class="pos-tab" data-tab="equity">Equity / Saldo</div>
+                            </div>
+                        </div>
+                    <div id="positions-table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Símbolo</th>
+                                    <th>Side</th>
+                                    <th>Entrada</th>
+                                    <th>Preço Ref.</th>
+                                    <th>SL</th>
+                                    <th>TP</th>
+                                    <th>PnL</th>
+                                    <th>Tempo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="positions-body">
+                                <tr><td colspan="8" style="text-align:center; padding:10px; color:#9ca3af;">Sem posições...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="equity-area">
+                        <div class="eq-row"><span class="eq-label">Saldo:</span><span id="eq-balance" class="eq-value">--</span></div>
+                        <div class="eq-row"><span class="eq-label">Equity:</span><span id="eq-equity" class="eq-value">--</span></div>
+                        <div class="eq-row"><span class="eq-label">PnL Aberto:</span><span id="eq-open" class="eq-value">--</span></div>
+                        <div class="eq-row"><span class="eq-label eq-small">Atualizado:</span><span id="eq-ts" class="eq-value eq-small">--</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ORDERBOOK via iframe -->
+            <div id="orderbook-wrapper"
+                style="width: 320px; border-left: 1px solid #1c2530; display: flex; flex-direction: column;">
+                <iframe id="orderbook-frame" src="/static/orderbook.html" style="
+                    width: 100%;
+                    height: 100%;
+                    border: none;
+                    background: #11161f;
+                ">
+                </iframe>
+            </div>
+
+        </div>
+
+        <!-- BOTTOM BAR -->
+        <div id="bottom-bar">
+            <span>Zoom:</span>
+            <div class="zoom-btn" id="zoom-out">−</div>
+            <div class="zoom-btn" id="zoom-in">＋</div>
+
+            <span id="dbg-msg">Pronto.</span>
+        </div>
+    </div>
+
+    <!-- JS principal do dashboard -->
+    <script src="/static/oracleview.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Order Book - Dark Ultra Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    /* ===== LAYOUT GERAL DA PÁGINA (para uso standalone) ===== */
+    body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+
+    /* ===== CARD DO ORDERBOOK (inspirado no Grok) ===== */
+    .order-book {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, #1a1f2b 0%, #12161f 100%);
+      /* border-radius: 12px; removido para encaixar no painel */
+      overflow: hidden;
+      /* box-shadow removido pois já tem no container pai */
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ===== HEADER / COLUNAS ===== */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 12px;
+      font-weight: bold;
+      color: #a0a0a0;
+    }
+
+    .header span {
+      flex: 1;
+      text-align: right;
+    }
+
+    .header span:first-child {
+      text-align: left;
+    }
+
+    .subheader {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 12px;
+      font-size: 11px;
+      color: #80889a;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .subheader span {
+      flex: 1;
+      text-align: right;
+    }
+
+    .subheader span:first-child {
+      text-align: left;
+    }
+
+    /* ===== CONTÊINER DE LISTAS ===== */
+    .book-body {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .asks,
+    .bids {
+      position: relative;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .asks {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* ===== LINHAS ===== */
+    .row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 12px;
+      position: relative;
+      font-size: 13px;
+      transition: transform 0.2s ease, background 0.2s ease;
+      z-index: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .row:hover {
+      transform: scale(1.02);
+      background: rgba(255, 255, 255, 0.05);
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
+    }
+
+    .price,
+    .amount,
+    .total {
+      flex: 1;
+      text-align: right;
+      z-index: 2;
+    }
+
+    .price {
+      text-align: left;
+    }
+
+    .red {
+      color: #f6465d;
+    }
+
+    .green {
+      color: #0ecb81;
+    }
+
+    /* ===== BARRAS DE PROFUNDIDADE ===== */
+    .depth {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      z-index: 0;
+      transition: width 0.3s ease;
+    }
+
+    .asks .depth {
+      right: 0;
+      background: linear-gradient(to left,
+          rgba(246, 70, 93, 0.18) 0%,
+          rgba(246, 70, 93, 0) 100%);
+    }
+
+    .bids .depth {
+      left: 0;
+      background: linear-gradient(to right,
+          rgba(14, 203, 129, 0.18) 0%,
+          rgba(14, 203, 129, 0) 100%);
+    }
+
+    /* ===== MID PRICE ===== */
+    .current-price {
+      text-align: center;
+      padding: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      background: rgba(255, 255, 255, 0.02);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: #ffffff;
+    }
+
+    /* ===== EFEITO BLINK EM MUDANÇA ===== */
+    .changed-up {
+      animation: blinkUp 0.5s ease;
+    }
+
+    .changed-down {
+      animation: blinkDown 0.5s ease;
+    }
+
+    @keyframes blinkUp {
+      0% {
+        box-shadow: 0 0 0 rgba(14, 203, 129, 0);
+        background: rgba(14, 203, 129, 0.15);
+      }
+
+      100% {
+        box-shadow: 0 0 8px rgba(14, 203, 129, 0.4);
+        background: transparent;
+      }
+    }
+
+    @keyframes blinkDown {
+      0% {
+        box-shadow: 0 0 0 rgba(246, 70, 93, 0);
+        background: rgba(246, 70, 93, 0.15);
+      }
+
+      100% {
+        box-shadow: 0 0 8px rgba(246, 70, 93, 0.4);
+        background: transparent;
+      }
+    }
+  </style>
+</head>
+
+<body style="width:100%; height:100%; overflow:hidden;">
+  <div class="order-book" style="width:100%; height:100%; border-radius:0;">
+    <div class="header">
+      <span>Order Book</span>
+      <span style="text-align:right; font-weight:normal; font-size:11px;">BTCUSDT</span>
+    </div>
+
+    <div class="subheader">
+      <span>Preço (USDT)</span>
+      <span>Quantidade (BTC)</span>
+      <span>Total (USDT)</span>
+    </div>
+
+    <div class="book-body">
+      <div class="asks" id="ob-asks"></div>
+
+      <div class="current-price" id="ob-mid">--</div>
+
+      <div class="bids" id="ob-bids"></div>
+    </div>
+  </div>
+
+  <script>
+    // ===== CONFIGURAÇÃO =====
+    const API_URL = "/api/orderbook"; // mesmo endpoint do OracleView
+    const REFRESH_MS = 500;
+
+    const asksEl = document.getElementById("ob-asks");
+    const bidsEl = document.getElementById("ob-bids");
+    const midEl = document.getElementById("ob-mid");
+
+    // Mantém último snapshot para efeito de blink
+    let lastAsksMap = new Map(); // price -> size
+    let lastBidsMap = new Map();
+
+    async function fetchOrderBook() {
+      try {
+        const res = await fetch(API_URL, { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const asks = (data.asks || []).map(([p, s]) => ({
+          price: Number(p),
+          size: Number(s),
+        }));
+        const bids = (data.bids || []).map(([p, s]) => ({
+          price: Number(p),
+          size: Number(s),
+        }));
+
+        renderOrderBook(asks, bids);
+      } catch (e) {
+        console.error("Erro ao carregar orderbook:", e);
+      }
+    }
+
+    function renderOrderBook(asks, bids) {
+      // Ordena: asks crescente, bids decrescente
+      asks.sort((a, b) => a.price - b.price);
+      bids.sort((a, b) => b.price - a.price);
+
+      // Limpa DOM
+      asksEl.innerHTML = "";
+      bidsEl.innerHTML = "";
+
+      // Cálculo de profundidade acumulada (heatmap)
+      const asksCum = [];
+      const bidsCum = [];
+      let cum = 0;
+
+      for (const a of asks) {
+        cum += a.size;
+        asksCum.push({ ...a, cum });
+      }
+      let asksMaxCum = cum || 1;
+
+      cum = 0;
+      for (const b of bids) {
+        cum += b.size;
+        bidsCum.push({ ...b, cum });
+      }
+      let bidsMaxCum = cum || 1;
+
+      // Render ASKS
+      for (const level of asksCum) {
+        const row = document.createElement("div");
+        row.className = "row";
+
+        const total = level.price * level.size;
+
+        const priceSpan = document.createElement("span");
+        priceSpan.className = "price red";
+        priceSpan.textContent = level.price.toFixed(1);
+
+        const amountSpan = document.createElement("span");
+        amountSpan.className = "amount";
+        amountSpan.textContent = level.size.toFixed(3);
+
+        const totalSpan = document.createElement("span");
+        totalSpan.className = "total";
+        totalSpan.textContent = total.toFixed(2);
+
+        const depthDiv = document.createElement("div");
+        depthDiv.className = "depth";
+        depthDiv.style.width = (level.cum / asksMaxCum) * 100 + "%";
+
+        // Blink se mudou
+        const prevSize = lastAsksMap.get(level.price) || 0;
+        if (prevSize !== level.size) {
+          const cls = level.size > prevSize ? "changed-up" : "changed-down";
+          row.classList.add(cls);
+          setTimeout(() => row.classList.remove(cls), 400);
+        }
+
+        row.appendChild(priceSpan);
+        row.appendChild(amountSpan);
+        row.appendChild(totalSpan);
+        row.appendChild(depthDiv);
+
+        asksEl.appendChild(row);
+      }
+
+      // Render BIDS
+      for (const level of bidsCum) {
+        const row = document.createElement("div");
+        row.className = "row";
+
+        const total = level.price * level.size;
+
+        const priceSpan = document.createElement("span");
+        priceSpan.className = "price green";
+        priceSpan.textContent = level.price.toFixed(1);
+
+        const amountSpan = document.createElement("span");
+        amountSpan.className = "amount";
+        amountSpan.textContent = level.size.toFixed(3);
+
+        const totalSpan = document.createElement("span");
+        totalSpan.className = "total";
+        totalSpan.textContent = total.toFixed(2);
+
+        const depthDiv = document.createElement("div");
+        depthDiv.className = "depth";
+        depthDiv.style.width = (level.cum / bidsMaxCum) * 100 + "%";
+
+        const prevSize = lastBidsMap.get(level.price) || 0;
+        if (prevSize !== level.size) {
+          const cls = level.size > prevSize ? "changed-up" : "changed-down";
+          row.classList.add(cls);
+          setTimeout(() => row.classList.remove(cls), 400);
+        }
+
+        row.appendChild(priceSpan);
+        row.appendChild(amountSpan);
+        row.appendChild(totalSpan);
+        row.appendChild(depthDiv);
+
+        bidsEl.appendChild(row);
+      }
+
+      // Mid price
+      if (asks.length && bids.length) {
+        const bestAsk = asks[0].price;
+        const bestBid = bids[0].price;
+        const mid = (bestAsk + bestBid) / 2;
+        midEl.textContent = mid.toFixed(1) + " USDT";
+      } else {
+        midEl.textContent = "--";
+      }
+
+      // Atualiza mapas para blink da próxima rodada
+      lastAsksMap = new Map(asks.map(a => [a.price, a.size]));
+      lastBidsMap = new Map(bids.map(b => [b.price, b.size]));
+    }
+
+    // Loop
+    fetchOrderBook();
+    setInterval(fetchOrderBook, REFRESH_MS);
+  </script>
+</body>
+
+</html>

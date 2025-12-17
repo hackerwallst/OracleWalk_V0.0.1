@@ -1,0 +1,135 @@
+/* ===== GLOBAL ===== */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Trebuchet MS", system-ui, sans-serif;
+  background: #0b101a;
+  color: #d1d4dc;
+}
+
+#tv-root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* ===== TOP BAR ===== */
+
+#tv-topbar {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  background: #2b1340;              /* roxo pra diferenciar */
+  border-bottom: 1px solid #2a2e39;
+  box-sizing: border-box;
+}
+
+.tv-logo {
+  font-weight: 700;
+  font-size: 14px;
+  color: #ffd54f;
+  margin-right: 16px;
+}
+
+.tv-symbol {
+  font-size: 13px;
+  color: #d1d4dc;
+}
+
+.tv-status {
+  margin-left: auto;
+  font-size: 11px;
+  color: #14b866;
+  padding: 2px 8px;
+  border-radius: 3px;
+  border: 1px solid rgba(20,184,102,0.5);
+}
+
+/* ===== CONTAINER PANEIS ===== */
+
+/* Só DOIS painéis: preço+volume em cima, RSI embaixo */
+#tv-container {
+  flex: 1;
+  display: grid;
+  grid-template-rows: 75% 25%;
+  background: #0b101a;
+}
+
+.tv-pane {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  border-bottom: 1px solid #1e222d;
+}
+
+.tv-pane:last-child {
+  border-bottom: none;
+}
+
+/* ===== ZOOM CONTROLS ===== */
+
+#tv-zoom-controls {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  gap: 10px;
+}
+
+#tv-zoom-controls button {
+  width: 40px;
+  height: 30px;
+  border-radius: 4px;
+  border: 1px solid #343b4a;
+  background: #1c212b;
+  color: #d1d4dc;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+#tv-zoom-controls button:hover {
+  background: #2a2f3a;
+}
+
+/* ===== DEBUG BOX ===== */
+
+#tv-debug-box {
+  position: absolute;
+  bottom: 18px;
+  left: 18px;
+  z-index: 60;
+  padding: 6px 10px;
+  background: rgba(19, 23, 34, 0.95);
+  border: 1px solid #ff7043;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #ffcc80;
+}
+
+/* ===== SCROLLBAR ===== */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #131722;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #323846;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4b5365;
+}
+
