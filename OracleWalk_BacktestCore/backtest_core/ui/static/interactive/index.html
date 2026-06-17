@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>OracleWalk Interactive Replay</title>
+    <script>
+      (() => {
+        // Dynamic per-load version: always fetch fresh JS/CSS, never serve a stale
+        // cached build (the no.1 cause of "my fix didn't show up").
+        const version = String(Date.now());
+        const path = window.location.pathname;
+        const base = window.location.protocol === "file:"
+          ? new URL("./", document.baseURI).href
+          : path.startsWith("/interactive/")
+            ? "/interactive/"
+            : "/static/interactive/";
+        window.__INTERACTIVE_ASSET_BASE__ = base;
+        window.__INTERACTIVE_ASSET_VERSION__ = version;
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = `${base}styles.css?v=${version}`;
+        document.head.appendChild(link);
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark">O</div>
+          <div>
+            <strong>Oracle<span class="accent">Walk</span></strong>
+            <span>BacktestCore</span>
+          </div>
+        </div>
+
+        <div class="session-title">
+          <span>Replay Interativo</span>
+          <strong id="symbolTitle">--</strong>
+        </div>
+
+        <div class="connection-pill" id="connectionPill">
+          <span class="dot"></span>
+          <span id="connectionLabel">Conectando</span>
+        </div>
+
+        <div class="top-actions">
+          <label class="select-field">
+            <span>Ativo</span>
+            <select id="symbolSelect"></select>
+          </label>
+          <label class="select-field">
+            <span>Timeframe</span>
+            <select id="timeframeSelect"></select>
+          </label>
+          <label class="select-field">
+            <span>Estrategia</span>
+            <select id="strategySelect"></select>
+          </label>
+          <label class="select-field compact">
+            <span>Modo</span>
+            <select id="modeSelect"></select>
+          </label>
+          <button id="newSessionBtn" class="btn primary" type="button">Nova sessao</button>
+          <button id="finishBtn" class="btn danger" type="button">Finalizar</button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="chart-column">
+          <div class="chart-head">
+            <div class="instrument-block">
+              <strong id="instrumentLabel">--</strong>
+              <span id="timeframeLabel">--</span>
+            </div>
+            <label class="chart-tf-field">
+              <span>Grafico</span>
+              <select id="chartTimeframeSelect"></select>
+            </label>
+            <label class="chart-tf-field">
+              <span>Tipo</span>
+              <select id="chartTypeSelect">
+                <option value="candles">Candle</option>
+                <option value="bars">Barra</option>
+                <option value="line">Linha</option>
+                <option value="area">Area</option>
+              </select>
+            </label>
+            <label class="chart-tf-field">
+              <span>Escala</span>
+              <select id="scaleModeSelect">
+                <option value="linear">Linear</option>
+                <option value="log">Log</option>
+              </select>
+            </label>
+            <button id="volumeProfileBtn" class="btn tool chart-indicator-btn active" type="button" aria-pressed="true" title="Volume Profile visivel">
+              VP
+            </button>
+            <button id="volumeProfileRangeBtn" class="btn tool chart-indicator-btn" type="button" aria-pressed="false" title="Fixed Range Volume Profile">
+              VP Range
+            </button>
+            <div class="ohlc-strip" id="ohlcStrip">
+              <span id="barTime">--</span>
+              <span>O <strong id="ohlcOpen">--</strong></span>
+              <span>H <strong id="ohlcHigh">--</strong></span>
+              <span>L <strong id="ohlcLow">--</strong></span>
+              <span>C <strong id="ohlcClose">--</strong></span>
+            </div>
+            <div class="progress-block">
+              <span id="cursorLabel">0 / 0</span>
+              <div class="progress-track">
+                <div id="progressFill" class="progress-fill"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="chartShell" class="chart-shell">
+            <div id="drawingToolbar" class="drawing-toolbar" aria-label="Ferramentas de desenho">
+              <button data-tool="cursor" class="active" type="button" title="Cursor">↖</button>
+              <button data-tool="trend" type="button" title="Linha de tendencia">╱</button>
+              <button data-tool="horizontal" type="button" title="Linha horizontal">─</button>
+              <button data-tool="ray" type="button" title="Raio">➞</button>
+              <button data-tool="vertical" type="button" title="Linha vertical">│</button>
+              <button data-tool="fib" type="button" title="Fibonacci">F</button>
+              <button data-tool="text" type="button" title="Texto">T</button>
+              <button data-tool="brush" type="button" title="Brush">✎</button>
+              <button data-tool="measure" type="button" title="Regua">↔</button>
+              <button data-tool="eraser" type="button" title="Borracha">⌫</button>
+              <button id="clearDrawingsBtn" type="button" title="Remover desenhos">×</button>
+            </div>
+            <div id="chart" class="chart"></div>
+            <div id="volumeProfileOverlay" class="volume-profile-overlay"></div>
+            <div id="drawingOverlay" class="drawing-overlay"></div>
+            <div id="zoneOverlay" class="zone-overlay"></div>
+            <div id="repositionLine" class="reposition-line" hidden></div>
+          </div>
+
+          <div class="replay-bar">
+          <div class="button-group">
+              <button id="playBtn" class="btn-play" type="button" title="Play / pause (Espaco)">
+                <svg id="playIcon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                  <path d="M4 3 L13 8 L4 13 Z"></path>
+                </svg>
+                <span id="playLabel">Play</span>
+              </button>
+              <button id="stepBackBtn" class="btn icon-btn" type="button" title="Voltar 1 candle">&minus;1</button>
+              <button id="stepBtn" class="btn" type="button">+1</button>
+              <button id="resetBtn" class="btn icon-btn" type="button" title="Resetar replay">↺</button>
+              <button id="seekStartBtn" class="btn tool reposition-btn" type="button" title="Reposicionar replay — clique num ponto do grafico (Esc cancela)">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+                  <line x1="8" y1="2" x2="8" y2="14"></line>
+                  <path d="M5 5 L8 2 L11 5"></path>
+                  <path d="M3.5 11 L8 14 L12.5 11" opacity="0.55"></path>
+                </svg>
+                <span>Voltar no tempo</span>
+              </button>
+              <span id="timelineCursor" class="timeline-readout" title="Candle atual">0 / 0</span>
+              <span id="timelineDate" class="timeline-readout muted" hidden>--</span>
+              <button id="seekEndBtn" class="btn icon-btn" type="button" title="Ir para o fim">&gt;|</button>
+            </div>
+
+            <div class="scrubber-control">
+              <input id="cursorScrubber" type="range" min="0" max="0" value="0" step="1">
+            </div>
+
+            <div class="speed-presets" id="speedPresets" title="Velocidade">
+              <button data-speed="1" type="button">1x</button>
+              <button data-speed="5" type="button">5x</button>
+              <button data-speed="25" class="active" type="button">25x</button>
+              <button data-speed="100" type="button">100x</button>
+              <button data-speed="500" type="button">MAX</button>
+            </div>
+
+            <div class="separator"></div>
+
+            <button id="drawZoneBtn" class="btn tool" type="button" aria-pressed="false">Zona</button>
+            <div class="segmented" role="group" aria-label="Lado da zona">
+              <button id="supportBtn" class="active" type="button">Suporte</button>
+              <button id="resistanceBtn" type="button">Resistencia</button>
+            </div>
+            <label class="zone-tf-field">
+              <span>TF Zona</span>
+              <select id="zoneTimeframeSelect"></select>
+            </label>
+            <button id="deleteZoneBtn" class="btn danger ghost" type="button" disabled>Apagar</button>
+
+            <div class="status-line" id="statusLine">Aguardando sessao</div>
+          </div>
+
+          <section id="reportDashboard" class="report-dashboard" hidden>
+            <div class="report-dash-head">
+              <div class="report-dash-title">
+                <strong>Relatorio do Backtest</strong>
+                <span id="reportDashMeta">--</span>
+              </div>
+              <div class="report-dash-actions">
+                <button id="reportExportBtn" class="btn primary" type="button">Exportar PDF</button>
+                <button id="reportCloseBtn" class="btn ghost" type="button">Fechar</button>
+              </div>
+            </div>
+            <div id="reportDashMetrics" class="report-metrics"></div>
+            <div id="reportDashCharts" class="report-charts"></div>
+          </section>
+        </section>
+
+        <aside class="side-panel">
+          <section class="panel-section">
+            <div class="section-head">
+              <span>Estado</span>
+              <strong id="doneBadge">Ativo</strong>
+            </div>
+            <div class="metric-grid">
+              <div class="metric">
+                <span>Balance</span>
+                <strong id="balanceValue">--</strong>
+              </div>
+              <div class="metric">
+                <span>Equity</span>
+                <strong id="equityValue">--</strong>
+              </div>
+              <div class="metric">
+                <span>Zonas</span>
+                <strong id="zonesValue">0</strong>
+              </div>
+              <div class="metric">
+                <span>Abertos</span>
+                <strong id="openTradesValue">0</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel-section">
+            <div class="section-head">
+              <span>Zona Selecionada</span>
+              <strong id="selectedZoneState">--</strong>
+            </div>
+            <div id="selectedZonePanel" class="empty-panel">--</div>
+          </section>
+
+          <section class="panel-section">
+            <div class="section-head">
+              <span>Indicadores</span>
+              <strong id="indicatorCount">0</strong>
+            </div>
+            <div id="indicatorsList" class="kv-list"></div>
+          </section>
+
+          <section class="panel-section grow">
+            <div class="section-head">
+              <span>Trades Abertos</span>
+              <strong id="openTradeCount">0</strong>
+            </div>
+            <div id="openTradesList" class="trade-list"></div>
+          </section>
+
+          <section class="panel-section">
+            <div class="section-head">
+              <span>Fechados Agora</span>
+              <strong id="closedCount">0</strong>
+            </div>
+            <div id="eventsList" class="event-list"></div>
+          </section>
+
+          <section class="panel-section">
+            <div class="section-head">
+              <span>Relatorio</span>
+              <strong id="reportState">--</strong>
+            </div>
+            <div id="reportPanel" class="report-panel">--</div>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <div id="setupModal" class="setup-backdrop" hidden>
+      <div class="setup-modal" role="dialog" aria-modal="true" aria-label="Configurar Backtest">
+        <div class="setup-head">
+          <strong>Configurar Backtest</strong>
+          <span>Escolha estrategia, ativo e parametros antes de iniciar</span>
+        </div>
+        <div class="setup-grid">
+          <label class="setup-field">
+            <span>Estrategia</span>
+            <select id="setupStrategy"></select>
+          </label>
+          <label class="setup-field" id="setupModeField">
+            <span>Modo</span>
+            <select id="setupMode"></select>
+          </label>
+          <label class="setup-field">
+            <span>Ativo (CSV)</span>
+            <select id="setupSymbol"></select>
+          </label>
+          <label class="setup-field">
+            <span>Timeframe</span>
+            <select id="setupTimeframe"></select>
+          </label>
+          <label class="setup-field">
+            <span>Capital inicial ($)</span>
+            <input id="setupCapital" type="number" step="100" min="0" value="10000">
+          </label>
+          <label class="setup-field">
+            <span>Alavancagem (1:N)</span>
+            <input id="setupLeverage" type="number" step="1" min="1" value="30">
+          </label>
+          <label class="setup-field">
+            <span>Risco por trade (%)</span>
+            <input id="setupRisk" type="number" step="0.1" min="0" value="2">
+          </label>
+          <label class="setup-field">
+            <span>Comissao por lote ($)</span>
+            <input id="setupCommission" type="number" step="0.1" min="0" value="3.5">
+          </label>
+          <label class="setup-field">
+            <span>Comissao percentual</span>
+            <input id="setupCommissionPerc" type="number" step="0.0001" min="0" value="0">
+          </label>
+          <label class="setup-field inline-check">
+            <span>Spread</span>
+            <label>
+              <input id="setupUseSpread" type="checkbox" checked>
+              <strong>Usar spread</strong>
+            </label>
+          </label>
+          <label class="setup-field">
+            <span>Spread fixo (points)</span>
+            <input id="setupFixedSpread" type="number" step="0.1" min="0" placeholder="usar coluna do CSV">
+          </label>
+          <label class="setup-field">
+            <span>Slippage</span>
+            <input id="setupSlippage" type="number" step="0.00001" min="0" value="0">
+          </label>
+          <label class="setup-field">
+            <span>Swap long / lote</span>
+            <input id="setupSwapLong" type="number" step="0.01" value="-7.5">
+          </label>
+          <label class="setup-field">
+            <span>Swap short / lote</span>
+            <input id="setupSwapShort" type="number" step="0.01" value="2.5">
+          </label>
+          <label class="setup-field">
+            <span>Swap triplo</span>
+            <select id="setupTripleSwap">
+              <option value="0">Segunda</option>
+              <option value="1">Terca</option>
+              <option value="2" selected>Quarta</option>
+              <option value="3">Quinta</option>
+              <option value="4">Sexta</option>
+            </select>
+          </label>
+          <label class="setup-field">
+            <span>Point / Tick</span>
+            <input id="setupPoint" type="number" step="0.00001" min="0" placeholder="auto">
+          </label>
+          <label class="setup-field">
+            <span>Contrato</span>
+            <input id="setupContractSize" type="number" step="1" min="0" placeholder="auto">
+          </label>
+        </div>
+        <div class="setup-foot">
+          <button id="setupCancelBtn" class="btn ghost" type="button">Cancelar</button>
+          <button id="setupStartBtn" class="btn primary" type="button">Iniciar Backtest</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      const base = window.__INTERACTIVE_ASSET_BASE__ || "/static/interactive/";
+      const version = window.__INTERACTIVE_ASSET_VERSION__ || "dev";
+
+      function loadScript(src) {
+        return new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = src;
+          script.onload = resolve;
+          script.onerror = () => reject(new Error(`Falha ao carregar ${src}`));
+          document.head.appendChild(script);
+        });
+      }
+
+      try {
+        await loadScript(`${base}vendor/lightweight-charts.standalone.production.js?v=${version}`);
+        await import(`${base}replay.js?v=${version}`);
+      } catch (error) {
+        const status = document.getElementById("statusLine");
+        if (status) status.textContent = `Falha ao carregar UI: ${error?.message || error}`;
+        console.error(error);
+      }
+    </script>
+  </body>
+</html>

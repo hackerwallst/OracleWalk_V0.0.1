@@ -1,0 +1,52 @@
+{
+  "dataset": {
+    "symbol": "EURUSD",
+    "timeframe": "H4",
+    "path": "data/raw/EURUSD/H4/EURUSD_H4.csv",
+    "source": "mt5",
+    "expected_freq": null
+  },
+  "strategy": {
+    "name": "ml_rsi_zeiierman",
+    "params": {
+      "fixed_lot": 0.01,
+      "rsi_base": 14,
+      "memory_depth": 500,
+      "k_neighbors": 8,
+      "gate_rank": 60,
+      "gate_conf": 50,
+      "use_trend_gate": true,
+      "use_vol_band": true,
+      "vol_band_lo": 20,
+      "use_chop": true,
+      "atr_factor": 0.5,
+      "auto_weights_on": true,
+      "auto_speed": 1.0,
+      "st_mult_base": 1.5,
+      "st_ml_resp": 1.0,
+      "stop_atr": null,
+      "take_atr": null
+    }
+  },
+  "engine": {
+    "initial_capital": 10000.0,
+    "risk_per_trade_pct": 0.0,
+    "contract_size": 100000.0,
+    "leverage": 30.0,
+    "margin_rate": null,
+    "stop_out_level_pct": null,
+    "point": 0.00001,
+    "use_spread": true,
+    "spread_column": "spread",
+    "fixed_spread_points": null,
+    "commission_per_lot": 3.5,
+    "commission_perc": 0.0,
+    "swap_long_per_lot": -7.5,
+    "swap_short_per_lot": 2.5,
+    "triple_swap_weekday": 2,
+    "slippage": 0.0,
+    "single_position_mode": true,
+    "close_on_signal": "opposite"
+  },
+  "output_dir": "reports/EURUSD_H4_MT5_ml_rsi_zeiierman"
+}

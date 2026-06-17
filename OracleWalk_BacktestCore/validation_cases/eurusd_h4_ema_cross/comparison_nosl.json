@@ -1,0 +1,27 @@
+{
+  "mt5_total_trades": 109,
+  "backtestcore_total_trades": 150,
+  "paired_trades": 107,
+  "missing_in_backtestcore": 2,
+  "missing_in_mt5": 43,
+  "price_tol": 0.001,
+  "time_tol_seconds": 15000.0,
+  "trades_outside_price_tol": 15,
+  "entry_price_diff": {
+    "count": 107,
+    "mean_abs": 1.242990654207525e-05,
+    "max_abs": 9.000000000014552e-05
+  },
+  "exit_price_diff": {
+    "count": 107,
+    "mean_abs": 0.001171588785046751,
+    "max_abs": 0.02560999999999991
+  },
+  "pnl_diff": {
+    "count": 107,
+    "mean_abs": 16.511981308411304,
+    "max_abs": 255.6999999999994
+  },
+  "mt5_total_pnl": 481.30000000000007,
+  "backtestcore_total_pnl": -768.3219999998926
+}

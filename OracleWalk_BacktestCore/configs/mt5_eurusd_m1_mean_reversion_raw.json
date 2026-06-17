@@ -1,0 +1,51 @@
+{
+  "strategy": {
+    "name": "m1_mean_reversion",
+    "params": {
+      "entry_mode": "raw",
+      "fixed_lot": 0.01,
+      "ema_fast": 9,
+      "ema_target": 20,
+      "ema_filter": 50,
+      "ema_slow": 200,
+      "atr_period": 14,
+      "min_extension_atr": 0.35,
+      "min_wick_ratio": 0.0,
+      "rsi_period": 14,
+      "rsi_ma_period": 7,
+      "rsi_buy_max": 100.0,
+      "rsi_sell_min": 0.0,
+      "volume_period": 20,
+      "volume_mode": "off",
+      "volume_multiplier": 1.0,
+      "require_ha_ema9_cross": false,
+      "max_positions": 10,
+      "add_step_atr": 0.45,
+      "use_ema9_add_filter": false,
+      "emergency_stop_atr": null,
+      "trade_start_hour": null,
+      "trade_end_hour": null
+    }
+  },
+  "engine": {
+    "initial_capital": 10023.08,
+    "risk_per_trade_pct": 0.0,
+    "contract_size": 100000.0,
+    "leverage": 30.0,
+    "margin_rate": null,
+    "stop_out_level_pct": null,
+    "point": 0.00001,
+    "use_spread": true,
+    "spread_column": "spread",
+    "fixed_spread_points": null,
+    "commission_per_lot": 0.0,
+    "commission_perc": 0.0,
+    "swap_long_per_lot": -12.17,
+    "swap_short_per_lot": 0.59,
+    "triple_swap_weekday": 2,
+    "slippage": 0.0,
+    "single_position_mode": false,
+    "close_on_signal": "never"
+  },
+  "output_dir": "reports/EURUSD_M1_mean_reversion_raw"
+}

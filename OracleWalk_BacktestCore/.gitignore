@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+*.log
+*.egg-info/
+reports/*
+!reports/.gitkeep
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/broker_exports/*
+!data/broker_exports/.gitkeep
